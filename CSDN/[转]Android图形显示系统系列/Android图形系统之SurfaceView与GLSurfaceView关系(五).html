@@ -1,0 +1,26 @@
+原文  <a href=https://unbroken.blog.csdn.net/article/details/122406717>Android图形系统之SurfaceView与GLSurfaceView关系(五)</a><br>
+<div id="content_views" class="htmledit_views">
+                    <p><br/> Android 应用框架界面以使用 View 开头的对象层次结构为基础。所有界面元素都会经过一系列的测量和一个布局过程，该过程会将这些元素融入到矩形区域中。然后，所有可见 View 对象都会渲染到一个 Surface（当应用置于前台时，由 WindowManager 进行设置）。应用的界面线程会按帧执行布局并渲染到缓冲区。</p> 
+<h2><span style="color:#fe2c24;"><strong>1.SurfaceView</strong></span></h2> 
+<p><br/> SurfaceView 是一个组件，可用于在 View 层次结构中嵌入其他合成层。SurfaceView 采用与其他 View 相同的布局参数，因此可以像对待其他任何 View 一样对其进行操作，但 SurfaceView 的内容是透明的。</p> 
+<p>当您使用外部缓冲区来源（例如 GL 上下文和媒体解码器）进行渲染时，您需要从缓冲区来源复制缓冲区，以便在屏幕上显示这些缓冲区。为此，您可以使用 SurfaceView。</p> 
+<p>当 SurfaceView 的 View 组件即将变得可见时，框架会要求 SurfaceControl 从 SurfaceFlinger 请求新的 surface。如需在创建或销毁 Surface 时收到回调，请使用 SurfaceHolder 接口。默认情况下，新创建的 Surface 放置在应用界面 Surface 的后面。您可以替换默认的 Z 轴顺序，将新的 Surface 放在前面。</p> 
+<p>在需要渲染到单独的 Surface（例如，使用 Camera API 或 OpenGL ES 上下文进行渲染）时，使用 SurfaceView 进行渲染很有帮助。使用 SurfaceView 进行渲染时，SurfaceFlinger 会直接将缓冲区合成到屏幕上。如果没有 SurfaceView，您需要将缓冲区合成到屏幕外的 Surface，然后该 Surface 会合成到屏幕上，而使用 SurfaceView 进行渲染可以省去额外的工作。使用 SurfaceView 进行渲染后，请使用界面线程与 Activity 生命周期相协调，并根据需要调整 View 的大小或位置。然后，硬件混合渲染器会将应用界面与其他层混合在一起。</p> 
+<p>新的 Surface 是 BufferQueue 的生产方，其使用方是 SurfaceFlinger 层。您可以通过任何可向 BufferQueue 馈送资源的机制更新 Surface，例如，使用提供 Surface 的 Canvas 函数、附加 EGLSurface 并使用 GLES 在 Surface 上绘制，或者配置媒体解码器以写入 Surface。</p> 
+<h2><span style="color:#fe2c24;"><strong>2.SurfaceView 和 Activity 生命周期</strong></span></h2> 
+<p><br/> 当使用 SurfaceView 时，请使用主界面线程之外的线程渲染 Surface。</p> 
+<p>对于具有 SurfaceView 的 Activity，存在两个单独但相互依赖的状态机：</p> 
+<p>应用 onCreate/onResume/onPause<br/> 已创建/更改/销毁的 Surface<br/> 当 Activity 启动时，您将按以下顺序获得回调：</p> 
+<p>onCreate()<br/> onResume()<br/> surfaceCreated()<br/> surfaceChanged()<br/> 如果点击“返回”，您会获得：</p> 
+<p>onPause()<br/> surfaceDestroyed()（在 Surface 消失前调用）<br/> 如果旋转屏幕，Activity 将被销毁并重新创建，而您将获得整个生命周期。您可以通过检查 isFinishing() 判断出这是一次快速重启。启动/停止 Activity 的速度可能非常快，以至于 onPause() 之后就会发生 surfaceCreated()。</p> 
+<p>如果您点按电源按钮锁屏，只会出现 onPause()（没有 surfaceDestroyed()）。Surface 仍处于活动状态，并且可以继续渲染。如果您继续请求，则可以持续获得 Choreographer 事件。如果锁屏会强制改变方向，则当设备解锁时，您的 Activity 可能会重启。否则，您可以在脱离锁屏状态后使用与之前相同的 Surface。</p> 
+<p>线程的生命周期可以与 Surface 或 Activity 相关联，具体取决于锁屏时您想要发生的情况。该线程可以在 Activity 启动/停止时或者在 Surface 创建/销毁时启动/停止。</p> 
+<p>在 Activity 启动/停止时启动/停止线程可与应用生命周期良好配合。您可以在 onResume() 中启动渲染程序线程，并在 onStop() 中停止渲染程序线程。创建和配置线程时，有时 Surface 已经存在，有时不存在（例如，在使用电源按钮关闭屏幕后，Surface 仍处于活动状态）。您必须先等待 Surface 完成创建，然后再在线程中进行初始化。您不能在 surfaceCreate() 回调中初始化，因为如果未重新创建 Surface，它将不会再次触发。您需要改为查询或缓存 surface 状态，并将其转发到渲染器线程。</p> 
+<p>注意：在线程之间传递对象时要小心。最好通过处理程序消息传递 Surface 或 SurfaceHolder（而不仅仅是将其填充到线程中），避免多核系统出现问题。如需了解详情，请参阅 SMP Primer for Android。<br/> 在创建/销毁 Surface 时启动/停止线程能够实现很好的效果，因为 Surface 和渲染程序在逻辑上互相交织。您可以在创建 Surface 后启动线程，这样能够避免一些线程间通信问题，也可轻松转发 Surface 已创建/更改的消息。为确保在黑屏时停止渲染，并在解除黑屏时恢复渲染，请告知 Choreographer 停止调用帧绘制回调。如果渲染程序线程正在运行，onResume() 会恢复回调。但是，如果您根据帧之间的间隔时间添加动画效果，在下一个事件到来前可能有很大的空白；使用明确的暂停/恢复消息可以解决该问题。</p> 
+<p>注意：有关在创建/销毁 surface 时启动/停止线程的示例，请参阅 Grafika 的 HardwareScalerActivity。<br/> 这两个选项（让线程的生命周期与 surface 或 Activity 关联）都主要关注如何配置渲染器线程以及该线程是否正在执行。一个相关问题是，终止 Activity 时（在 onStop() 或 onSaveInstanceState() 中）从线程中提取状态；在这种情况下，将线程的生命周期与 Activity 关联在一起效果最好，因为在渲染程序线程加入后，无需使用同步基元就可以访问经过渲染的线程的状态。</p> 
+<h2><span style="color:#fe2c24;"><strong>3.GLSurfaceView</strong></span></h2> 
+<p><br/> GLSurfaceView 类提供了帮助管理 EGL 上下文、在线程间通信以及与 activity 生命周期交互的辅助程序类。您无需使用 GLSurfaceView 即可使用 GLES。</p> 
+<p>例如，GLSurfaceView 会创建一个渲染线程，并在线程上配置 EGL 上下文。当 Activity 暂停时，状态将自动清除。大多数应用无需了解有关 EGL 的任何信息即可通过 GLSurfaceView 来使用GLES。</p> 
+<p>在大多数情况下，GLSurfaceView 可简化 GLES 的使用。但在某些情况下，却会造成妨碍。</p>
+                </div>
+        

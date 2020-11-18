@@ -1,0 +1,237 @@
+原文  <a href=https://unbroken.blog.csdn.net/article/details/131837369>Android图形系统之ANativeWindow与Surface关系(十二)</a><br>
+<div id="content_views" class="markdown_views prism-atom-one-dark">
+                    <svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+                        <path stroke-linecap="round" d="M5,0 0,2.5 5,5z" id="raphael-marker-block" style="-webkit-tap-highlight-color: rgba(0, 0, 0, 0);"/>
+                    </svg>
+                    <p><font color="red" size="3"> <strong>简介：</strong></font><font color="blue" size="3"> <strong>CSDN博客专家，专注Android/Linux系统，分享多mic语音方案、音视频、编解码等技术，与大家一起成长！</strong></font></p> 
+<p><font color="red" size="3"> <strong>优质专栏：</strong></font><a href="https://blog.csdn.net/u010164190/category_9599435.html"><strong>Audio工程师进阶系列</strong></a>【<strong>原创干货持续更新中……</strong>】🚀</p> 
+<p><font color="red" size="3"> <strong>人生格言：</strong> </font> <font color="blue" size="3"><strong>人生从来没有捷径，只有行动才是治疗恐惧和懒惰的唯一良药.</strong></font></p> 
+<center> 
+ <font color="red" size="5"> 更多原创,欢迎关注：Android系统攻城狮</font> 
+</center> 
+<p><img src="https://img-blog.csdnimg.cn/20190106163945739.jpg#pic_center" alt="欢迎关注Android系统攻城狮"/></p> 
+<h3><a id="1_23"/>1.前言</h3> 
+<blockquote> 
+ <p>本篇目的：理解Android显示系统之ANativeWindow与Surface关系</p> 
+</blockquote> 
+<h3><a id="2ANativeWindowSurface_26"/>2.ANativeWindow与Surface类图</h3> 
+<blockquote> 
+ <p>frameworks/native/libs/gui/include/gui/Surface.h</p> 
+</blockquote> 
+<pre><code class="prism language-cpp"><span class="token keyword">class</span> <span class="token class-name">Surface</span> <span class="token operator">:</span> <span class="token base-clause"><span class="token keyword">public</span> <span class="token class-name">ANativeObjectBase</span><span class="token operator"><</span><span class="token class-name">ANativeWindow</span><span class="token punctuation">,</span> <span class="token class-name">Surface</span><span class="token punctuation">,</span> <span class="token class-name">RefBase</span><span class="token operator">></span></span>
+<span class="token punctuation">{<!-- --></span>
+  <span class="token keyword">public</span><span class="token operator">:</span>
+  <span class="token keyword">explicit</span> <span class="token function">Surface</span><span class="token punctuation">(</span><span class="token keyword">const</span> sp<span class="token operator"><</span>IGraphicBufferProducer<span class="token operator">></span><span class="token operator">&</span> bufferProducer<span class="token punctuation">,</span> <span class="token keyword">bool</span> controlledByApp <span class="token operator">=</span> <span class="token boolean">false</span><span class="token punctuation">,</span>
+                     <span class="token keyword">const</span> sp<span class="token operator"><</span>IBinder<span class="token operator">></span><span class="token operator">&</span> surfaceControlHandle <span class="token operator">=</span> <span class="token keyword">nullptr</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+  sp<span class="token operator"><</span>IGraphicBufferProducer<span class="token operator">></span> <span class="token function">getIGraphicBufferProducer</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token keyword">const</span><span class="token punctuation">;</span>
+  sp<span class="token operator"><</span>IBinder<span class="token operator">></span> <span class="token function">getSurfaceControlHandle</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token keyword">const</span> <span class="token punctuation">{<!-- --></span> <span class="token keyword">return</span> mSurfaceControlHandle<span class="token punctuation">;</span> <span class="token punctuation">}</span>
+  <span class="token keyword">void</span> <span class="token function">setSidebandStream</span><span class="token punctuation">(</span><span class="token keyword">const</span> sp<span class="token operator"><</span>NativeHandle<span class="token operator">></span><span class="token operator">&</span> stream<span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token keyword">private</span><span class="token operator">:</span>
+    <span class="token comment">// can't be copied</span>
+    Surface<span class="token operator">&</span> <span class="token keyword">operator</span> <span class="token operator">=</span> <span class="token punctuation">(</span><span class="token keyword">const</span> Surface<span class="token operator">&</span> rhs<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token function">Surface</span><span class="token punctuation">(</span><span class="token keyword">const</span> Surface<span class="token operator">&</span> rhs<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token comment">// ANativeWindow hooks</span>
+    <span class="token keyword">static</span> <span class="token keyword">int</span> <span class="token function">hook_cancelBuffer</span><span class="token punctuation">(</span>ANativeWindow<span class="token operator">*</span> window<span class="token punctuation">,</span>
+            ANativeWindowBuffer<span class="token operator">*</span> buffer<span class="token punctuation">,</span> <span class="token keyword">int</span> fenceFd<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">static</span> <span class="token keyword">int</span> <span class="token function">hook_dequeueBuffer</span><span class="token punctuation">(</span>ANativeWindow<span class="token operator">*</span> window<span class="token punctuation">,</span>
+            ANativeWindowBuffer<span class="token operator">*</span><span class="token operator">*</span> buffer<span class="token punctuation">,</span> <span class="token keyword">int</span><span class="token operator">*</span> fenceFd<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">static</span> <span class="token keyword">int</span> <span class="token function">hook_perform</span><span class="token punctuation">(</span>ANativeWindow<span class="token operator">*</span> window<span class="token punctuation">,</span> <span class="token keyword">int</span> operation<span class="token punctuation">,</span> <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">static</span> <span class="token keyword">int</span> <span class="token function">hook_query</span><span class="token punctuation">(</span><span class="token keyword">const</span> ANativeWindow<span class="token operator">*</span> window<span class="token punctuation">,</span> <span class="token keyword">int</span> what<span class="token punctuation">,</span> <span class="token keyword">int</span><span class="token operator">*</span> value<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">static</span> <span class="token keyword">int</span> <span class="token function">hook_queueBuffer</span><span class="token punctuation">(</span>ANativeWindow<span class="token operator">*</span> window<span class="token punctuation">,</span>
+            ANativeWindowBuffer<span class="token operator">*</span> buffer<span class="token punctuation">,</span> <span class="token keyword">int</span> fenceFd<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">static</span> <span class="token keyword">int</span> <span class="token function">hook_setSwapInterval</span><span class="token punctuation">(</span>ANativeWindow<span class="token operator">*</span> window<span class="token punctuation">,</span> <span class="token keyword">int</span> interval<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token keyword">static</span> <span class="token keyword">int</span> <span class="token function">cancelBufferInternal</span><span class="token punctuation">(</span>ANativeWindow<span class="token operator">*</span> window<span class="token punctuation">,</span> ANativeWindowBuffer<span class="token operator">*</span> buffer<span class="token punctuation">,</span>
+                                    <span class="token keyword">int</span> fenceFd<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">static</span> <span class="token keyword">int</span> <span class="token function">dequeueBufferInternal</span><span class="token punctuation">(</span>ANativeWindow<span class="token operator">*</span> window<span class="token punctuation">,</span> ANativeWindowBuffer<span class="token operator">*</span><span class="token operator">*</span> buffer<span class="token punctuation">,</span>
+                                     <span class="token keyword">int</span><span class="token operator">*</span> fenceFd<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">static</span> <span class="token keyword">int</span> <span class="token function">performInternal</span><span class="token punctuation">(</span>ANativeWindow<span class="token operator">*</span> window<span class="token punctuation">,</span> <span class="token keyword">int</span> operation<span class="token punctuation">,</span> va_list args<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">static</span> <span class="token keyword">int</span> <span class="token function">queueBufferInternal</span><span class="token punctuation">(</span>ANativeWindow<span class="token operator">*</span> window<span class="token punctuation">,</span> ANativeWindowBuffer<span class="token operator">*</span> buffer<span class="token punctuation">,</span> <span class="token keyword">int</span> fenceFd<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">static</span> <span class="token keyword">int</span> <span class="token function">queryInternal</span><span class="token punctuation">(</span><span class="token keyword">const</span> ANativeWindow<span class="token operator">*</span> window<span class="token punctuation">,</span> <span class="token keyword">int</span> what<span class="token punctuation">,</span> <span class="token keyword">int</span><span class="token operator">*</span> value<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token keyword">static</span> <span class="token keyword">int</span> <span class="token function">hook_cancelBuffer_DEPRECATED</span><span class="token punctuation">(</span>ANativeWindow<span class="token operator">*</span> window<span class="token punctuation">,</span>
+            ANativeWindowBuffer<span class="token operator">*</span> buffer<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">static</span> <span class="token keyword">int</span> <span class="token function">hook_dequeueBuffer_DEPRECATED</span><span class="token punctuation">(</span>ANativeWindow<span class="token operator">*</span> window<span class="token punctuation">,</span>
+            ANativeWindowBuffer<span class="token operator">*</span><span class="token operator">*</span> buffer<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">static</span> <span class="token keyword">int</span> <span class="token function">hook_lockBuffer_DEPRECATED</span><span class="token punctuation">(</span>ANativeWindow<span class="token operator">*</span> window<span class="token punctuation">,</span>
+            ANativeWindowBuffer<span class="token operator">*</span> buffer<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">static</span> <span class="token keyword">int</span> <span class="token function">hook_queueBuffer_DEPRECATED</span><span class="token punctuation">(</span>ANativeWindow<span class="token operator">*</span> window<span class="token punctuation">,</span>
+            ANativeWindowBuffer<span class="token operator">*</span> buffer<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            
+<span class="token punctuation">}</span><span class="token punctuation">;</span>
+</code></pre> 
+<div class="mermaid"> 
+ <svg id="mermaid-svg-ckthlEgGXIa4q6sT" width="884.02099609375" xmlns="http://www.w3.org/2000/svg" height="432.0694580078125" viewbox="0 0 884.02099609375 432.0694580078125" class="mermaid-svg"> 
+  <style>#mermaid-svg-ckthlEgGXIa4q6sT {font-family:"trebuchet ms",verdana,arial,sans-serif;font-size:16px;fill:#333;}#mermaid-svg-ckthlEgGXIa4q6sT .error-icon{fill:#552222;}#mermaid-svg-ckthlEgGXIa4q6sT .error-text{fill:#552222;stroke:#552222;}#mermaid-svg-ckthlEgGXIa4q6sT .edge-thickness-normal{stroke-width:2px;}#mermaid-svg-ckthlEgGXIa4q6sT .edge-thickness-thick{stroke-width:3.5px;}#mermaid-svg-ckthlEgGXIa4q6sT .edge-pattern-solid{stroke-dasharray:0;}#mermaid-svg-ckthlEgGXIa4q6sT .edge-pattern-dashed{stroke-dasharray:3;}#mermaid-svg-ckthlEgGXIa4q6sT .edge-pattern-dotted{stroke-dasharray:2;}#mermaid-svg-ckthlEgGXIa4q6sT .marker{fill:#333333;stroke:#333333;}#mermaid-svg-ckthlEgGXIa4q6sT .marker.cross{stroke:#333333;}#mermaid-svg-ckthlEgGXIa4q6sT svg{font-family:"trebuchet ms",verdana,arial,sans-serif;font-size:16px;}#mermaid-svg-ckthlEgGXIa4q6sT g.classGroup text{fill:#9370DB;fill:#131300;stroke:none;font-family:"trebuchet ms",verdana,arial,sans-serif;font-size:10px;}#mermaid-svg-ckthlEgGXIa4q6sT g.classGroup text .title{font-weight:bolder;}#mermaid-svg-ckthlEgGXIa4q6sT .nodeLabel,#mermaid-svg-ckthlEgGXIa4q6sT .edgeLabel{color:#131300;}#mermaid-svg-ckthlEgGXIa4q6sT .edgeLabel .label rect{fill:#ECECFF;}#mermaid-svg-ckthlEgGXIa4q6sT .label text{fill:#131300;}#mermaid-svg-ckthlEgGXIa4q6sT .edgeLabel .label span{background:#ECECFF;}#mermaid-svg-ckthlEgGXIa4q6sT .classTitle{font-weight:bolder;}#mermaid-svg-ckthlEgGXIa4q6sT .node rect,#mermaid-svg-ckthlEgGXIa4q6sT .node circle,#mermaid-svg-ckthlEgGXIa4q6sT .node ellipse,#mermaid-svg-ckthlEgGXIa4q6sT .node polygon,#mermaid-svg-ckthlEgGXIa4q6sT .node path{fill:#ECECFF;stroke:#9370DB;stroke-width:1px;}#mermaid-svg-ckthlEgGXIa4q6sT .divider{stroke:#9370DB;stroke:1;}#mermaid-svg-ckthlEgGXIa4q6sT g.clickable{cursor:pointer;}#mermaid-svg-ckthlEgGXIa4q6sT g.classGroup rect{fill:#ECECFF;stroke:#9370DB;}#mermaid-svg-ckthlEgGXIa4q6sT g.classGroup line{stroke:#9370DB;stroke-width:1;}#mermaid-svg-ckthlEgGXIa4q6sT .classLabel .box{stroke:none;stroke-width:0;fill:#ECECFF;opacity:0.5;}#mermaid-svg-ckthlEgGXIa4q6sT .classLabel .label{fill:#9370DB;font-size:10px;}#mermaid-svg-ckthlEgGXIa4q6sT .relation{stroke:#333333;stroke-width:1;fill:none;}#mermaid-svg-ckthlEgGXIa4q6sT .dashed-line{stroke-dasharray:3;}#mermaid-svg-ckthlEgGXIa4q6sT #compositionStart,#mermaid-svg-ckthlEgGXIa4q6sT .composition{fill:#333333!important;stroke:#333333!important;stroke-width:1;}#mermaid-svg-ckthlEgGXIa4q6sT #compositionEnd,#mermaid-svg-ckthlEgGXIa4q6sT .composition{fill:#333333!important;stroke:#333333!important;stroke-width:1;}#mermaid-svg-ckthlEgGXIa4q6sT #dependencyStart,#mermaid-svg-ckthlEgGXIa4q6sT .dependency{fill:#333333!important;stroke:#333333!important;stroke-width:1;}#mermaid-svg-ckthlEgGXIa4q6sT #dependencyStart,#mermaid-svg-ckthlEgGXIa4q6sT .dependency{fill:#333333!important;stroke:#333333!important;stroke-width:1;}#mermaid-svg-ckthlEgGXIa4q6sT #extensionStart,#mermaid-svg-ckthlEgGXIa4q6sT .extension{fill:#333333!important;stroke:#333333!important;stroke-width:1;}#mermaid-svg-ckthlEgGXIa4q6sT #extensionEnd,#mermaid-svg-ckthlEgGXIa4q6sT .extension{fill:#333333!important;stroke:#333333!important;stroke-width:1;}#mermaid-svg-ckthlEgGXIa4q6sT #aggregationStart,#mermaid-svg-ckthlEgGXIa4q6sT .aggregation{fill:#ECECFF!important;stroke:#333333!important;stroke-width:1;}#mermaid-svg-ckthlEgGXIa4q6sT #aggregationEnd,#mermaid-svg-ckthlEgGXIa4q6sT .aggregation{fill:#ECECFF!important;stroke:#333333!important;stroke-width:1;}#mermaid-svg-ckthlEgGXIa4q6sT .edgeTerminals{font-size:11px;}#mermaid-svg-ckthlEgGXIa4q6sT :root{--mermaid-font-family:"trebuchet ms",verdana,arial,sans-serif;}</style> 
+  <g transform="translate(0, 0)"> 
+   <defs> 
+    <marker id="classDiagram-aggregationStart" class="marker aggregation classDiagram" refx="0" refy="7" markerwidth="190" markerheight="240" orient="auto"> 
+     <path d="M 18,7 L9,13 L1,7 L9,1 Z"/> 
+    </marker> 
+   </defs> 
+   <defs> 
+    <marker id="classDiagram-aggregationEnd" class="marker aggregation classDiagram" refx="19" refy="7" markerwidth="20" markerheight="28" orient="auto"> 
+     <path d="M 18,7 L9,13 L1,7 L9,1 Z"/> 
+    </marker> 
+   </defs> 
+   <defs> 
+    <marker id="classDiagram-extensionStart" class="marker extension classDiagram" refx="0" refy="7" markerwidth="190" markerheight="240" orient="auto"> 
+     <path d="M 1,7 L18,13 V 1 Z"/> 
+    </marker> 
+   </defs> 
+   <defs> 
+    <marker id="classDiagram-extensionEnd" class="marker extension classDiagram" refx="19" refy="7" markerwidth="20" markerheight="28" orient="auto"> 
+     <path d="M 1,1 V 13 L18,7 Z"/> 
+    </marker> 
+   </defs> 
+   <defs> 
+    <marker id="classDiagram-compositionStart" class="marker composition classDiagram" refx="0" refy="7" markerwidth="190" markerheight="240" orient="auto"> 
+     <path d="M 18,7 L9,13 L1,7 L9,1 Z"/> 
+    </marker> 
+   </defs> 
+   <defs> 
+    <marker id="classDiagram-compositionEnd" class="marker composition classDiagram" refx="19" refy="7" markerwidth="20" markerheight="28" orient="auto"> 
+     <path d="M 18,7 L9,13 L1,7 L9,1 Z"/> 
+    </marker> 
+   </defs> 
+   <defs> 
+    <marker id="classDiagram-dependencyStart" class="marker dependency classDiagram" refx="0" refy="7" markerwidth="190" markerheight="240" orient="auto"> 
+     <path d="M 5,7 L9,13 L1,7 L9,1 Z"/> 
+    </marker> 
+   </defs> 
+   <defs> 
+    <marker id="classDiagram-dependencyEnd" class="marker dependency classDiagram" refx="19" refy="7" markerwidth="20" markerheight="28" orient="auto"> 
+     <path d="M 18,7 L9,13 L14,7 L9,1 Z"/> 
+    </marker> 
+   </defs> 
+   <g class="root"> 
+    <g class="clusters"/> 
+    <g class="edgePaths"> 
+     <path d="M278.5121765136719,133.02084732055664L278.5121765136719,149.35707585016885C278.5121765136719,165.6933043797811,278.5121765136719,198.36576143900552,278.5121765136719,221.03590234120688C278.5121765136719,243.7060432434082,278.5121765136719,256.3738679885864,278.5121765136719,262.70778036117554L278.5121765136719,269.04169273376465" id="id1" class="  edge-pattern-solid relation" style="fill:none" marker-start="url(#classDiagram-extensionStart)"/> 
+    </g> 
+    <g class="edgeLabels"> 
+     <g class="edgeLabel" transform="translate(278.5121765136719, 231.03821849822998)"> 
+      <g class="label" transform="translate(-15.99826431274414, -13.003474235534668)"> 
+       <foreignobject width="31.99652862548828" height="26.006948471069336"> 
+        <div style="display: inline-block; white-space: nowrap;"> 
+         <span class="edgeLabel"><span class="edgeLabel">继承</span></span> 
+        </div> 
+       </foreignobject> 
+      </g> 
+     </g> 
+    </g> 
+    <g class="nodes"> 
+     <g class="node default" id="classid-ANativeObjectBase<ANativeWindow, Surface, RefBase>-6" transform="translate(278.5121765136719, 100.51737213134766)"> 
+      <rect class="outer title-state" x="-270.5121765136719" y="-32.50347423553467" width="541.0243530273438" height="65.00694847106934"/> 
+      <line class="divider" x1="-270.5121765136719" x2="270.5121765136719" y1="5.503474235534668" y2="5.503474235534668"/> 
+      <line class="divider" x1="-270.5121765136719" x2="270.5121765136719" y1="21.503474235534668" y2="21.503474235534668"/> 
+      <g class="label"> 
+       <foreignobject width="0" height="0"> 
+        <div style="display: inline-block; white-space: nowrap;"> 
+         <span class="nodeLabel"/> 
+        </div> 
+       </foreignobject> 
+       <foreignobject class="classTitle" width="526.0243530273438" height="26.006948471069336" transform="translate( -263.0121765136719, -25.003474235534668)"> 
+        <div style="display: inline-block; white-space: nowrap;"> 
+         <span class="nodeLabel">ANativeObjectBase<ANativeWindow, Surface, RefBase></span> 
+        </div> 
+       </foreignobject> 
+      </g> 
+     </g> 
+     <g class="node default" id="classid-Surface-7" transform="translate(278.5121765136719, 346.55558586120605)"> 
+      <rect class="outer title-state" x="-123.11632537841797" y="-77.51389694213867" width="246.23265075683594" height="155.02779388427734"/> 
+      <line class="divider" x1="-123.11632537841797" x2="123.11632537841797" y1="-39.506948471069336" y2="-39.506948471069336"/> 
+      <line class="divider" x1="-123.11632537841797" x2="123.11632537841797" y1="-23.506948471069336" y2="-23.506948471069336"/> 
+      <g class="label"> 
+       <foreignobject width="0" height="0"> 
+        <div style="display: inline-block; white-space: nowrap;"> 
+         <span class="nodeLabel"/> 
+        </div> 
+       </foreignobject> 
+       <foreignobject class="classTitle" width="58.6631965637207" height="26.006948471069336" transform="translate( -29.33159828186035, -70.01389694213867)"> 
+        <div style="display: inline-block; white-space: nowrap;"> 
+         <span class="nodeLabel">Surface</span> 
+        </div> 
+       </foreignobject> 
+       <foreignobject width="231.23265075683594" height="26.006948471069336" transform="translate( -115.61632537841797, -16.006948471069336)"> 
+        <div style="display: inline-block; white-space: nowrap;"> 
+         <span class="nodeLabel">+sp getIGraphicBufferProducer()</span> 
+        </div> 
+       </foreignobject> 
+       <foreignobject width="220.86807250976562" height="26.006948471069336" transform="translate( -115.61632537841797, 14)"> 
+        <div style="display: inline-block; white-space: nowrap;"> 
+         <span class="nodeLabel">+sp getSurfaceControlHandle()</span> 
+        </div> 
+       </foreignobject> 
+       <foreignobject width="96.87500762939453" height="26.006948471069336" transform="translate( -115.61632537841797, 44.006948471069336)"> 
+        <div style="display: inline-block; white-space: nowrap;"> 
+         <span class="nodeLabel">#int connect()</span> 
+        </div> 
+       </foreignobject> 
+      </g> 
+     </g> 
+     <g class="node default" id="classid-ANativeWindow-8" transform="translate(737.5226287841797, 100.51737213134766)"> 
+      <rect class="outer title-state" x="-138.49827575683594" y="-92.51737117767334" width="276.9965515136719" height="185.03474235534668"/> 
+      <line class="divider" x1="-138.49827575683594" x2="138.49827575683594" y1="-54.510422706604004" y2="-54.510422706604004"/> 
+      <line class="divider" x1="-138.49827575683594" x2="138.49827575683594" y1="-38.510422706604004" y2="-38.510422706604004"/> 
+      <g class="label"> 
+       <foreignobject width="0" height="0"> 
+        <div style="display: inline-block; white-space: nowrap;"> 
+         <span class="nodeLabel"/> 
+        </div> 
+       </foreignobject> 
+       <foreignobject class="classTitle" width="120.67708587646484" height="26.006948471069336" transform="translate( -60.33854293823242, -85.01737117767334)"> 
+        <div style="display: inline-block; white-space: nowrap;"> 
+         <span class="nodeLabel">ANativeWindow</span> 
+        </div> 
+       </foreignobject> 
+       <foreignobject width="197.37847900390625" height="26.006948471069336" transform="translate( -130.99827575683594, -31.010422706604004)"> 
+        <div style="display: inline-block; white-space: nowrap;"> 
+         <span class="nodeLabel">-int (*query)()</span> 
+        </div> 
+       </foreignobject> 
+       <foreignobject width="212.4652862548828" height="26.006948471069336" transform="translate( -130.99827575683594, -1.003474235534668)"> 
+        <div style="display: inline-block; white-space: nowrap;"> 
+         <span class="nodeLabel">-int (*perform)()</span> 
+        </div> 
+       </foreignobject> 
+       <foreignobject width="244.21876525878906" height="26.006948471069336" transform="translate( -130.99827575683594, 29.003474235534668)"> 
+        <div style="display: inline-block; white-space: nowrap;"> 
+         <span class="nodeLabel">-int (*queueBuffer)()</span> 
+        </div> 
+       </foreignobject> 
+       <foreignobject width="261.9965515136719" height="26.006948471069336" transform="translate( -130.99827575683594, 59.010422706604004)"> 
+        <div style="display: inline-block; white-space: nowrap;"> 
+         <span class="nodeLabel">-int (*dequeueBuffer)()</span> 
+        </div> 
+       </foreignobject> 
+      </g> 
+     </g> 
+    </g> 
+   </g> 
+  </g> 
+ </svg> 
+</div> 
+<h3><a id="3ANativeWindowSurface_94"/>3.ANativeWindow与Surface转换用法实例</h3> 
+<h4><a id="1_95"/><1>.用法一</h4> 
+<pre><code class="prism language-cpp">sp<span class="token operator"><</span>SurfaceComposerClient<span class="token operator">></span> client <span class="token operator">=</span> <span class="token keyword">new</span> SurfaceComposerClient<span class="token punctuation">;</span>
+
+<span class="token keyword">void</span> <span class="token function">render</span><span class="token punctuation">(</span>onst sp<span class="token operator"><</span>ANativeWindow<span class="token operator">></span> <span class="token operator">&</span>nativeWindow<span class="token punctuation">)</span> <span class="token punctuation">{<!-- --></span>
+<span class="token punctuation">(</span>NativeWindow<span class="token punctuation">.</span><span class="token function">get</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token operator">-></span><span class="token function">perform</span><span class="token punctuation">(</span>NativeWindow<span class="token punctuation">.</span><span class="token function">get</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span> NATIVE_WINDOW_SET_BUFFERS_GEOMETRY<span class="token punctuation">,</span>bufWidth<span class="token punctuation">,</span> bufHeight<span class="token punctuation">,</span> halFormat<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+
+
+sp<span class="token operator"><</span>SurfaceControl<span class="token operator">></span> surfaceControl <span class="token operator">=</span> client<span class="token operator">-></span><span class="token function">createSurface</span><span class="token punctuation">(</span><span class="token function">String8</span><span class="token punctuation">(</span><span class="token string">"testsurface"</span><span class="token punctuation">)</span><span class="token punctuation">,</span>lcd_width<span class="token punctuation">,</span> lcd_height<span class="token punctuation">,</span> PIXEL_FORMAT_RGBA_8888<span class="token punctuation">,</span> <span class="token number">0</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+sp<span class="token operator"><</span>Surface<span class="token operator">></span> surface <span class="token operator">=</span> surfaceControl<span class="token operator">-></span><span class="token function">getSurface</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+<span class="token function">test</span><span class="token punctuation">(</span>surface<span class="token punctuation">)</span><span class="token punctuation">;</span>							    
+
+</code></pre> 
+<h4><a id="2_111"/><2>.用法二</h4> 
+<pre><code class="prism language-cpp">ANativeWindow<span class="token operator">*</span> window <span class="token operator">=</span> <span class="token keyword">nullptr</span><span class="token punctuation">;</span>
+Surface<span class="token operator">*</span> c <span class="token operator">=</span> <span class="token generic-function"><span class="token function">static_cast</span><span class="token generic class-name"><span class="token operator"><</span>Surface<span class="token operator">*</span><span class="token operator">></span></span></span><span class="token punctuation">(</span>window<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+</code></pre>
+                </div>
+                

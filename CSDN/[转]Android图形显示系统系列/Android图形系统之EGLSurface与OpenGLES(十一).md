@@ -1,0 +1,41 @@
+**原文** [Android图形系统之EGLSurface与OpenGLES(十一)](https://unbroken.blog.csdn.net/article/details/122410958)  
+
+Android 使用 OpenGL ES (GLES) API 渲染图形。为了创建 GLES 上下文并为 GLES 渲染提供窗口系统，Android 使用
+EGL 库。GLES 调用用于渲染纹理多边形，而 EGL 调用用于将渲染放到屏幕上。
+
+在使用 GLES 进行绘制之前，您需要创建 GL 上下文。在 EGL 中，这意味着要创建一个 EGLContext 和一个 EGLSurface。 GLES
+操作适用于当前上下文，该上下文通过线程局部存储访问，而不是作为参数进行传递。渲染代码应该在当前 GLES 线程（而不是界面线程）上执行。
+
+## **1.EGLSurface**
+
+  
+EGLSurface 可以是由 EGL 分配的离屏缓冲区（称为“pbuffer”），也可以是由操作系统分配的窗口。调用
+eglCreateWindowSurface() 函数可创建 EGL 窗口 Surface。eglCreateWindowSurface()
+将“窗口对象”作为参数，在 Android 上，该对象是 Surface。Surface 是 BufferQueue
+的生产方端。消费方（SurfaceView、SurfaceTexture、TextureView 或 ImageReader）创建 Surface。当您调用
+eglCreateWindowSurface() 时，EGL 将创建一个新的 EGLSurface 对象，并将其连接到窗口对象的 BufferQueue
+的生产方接口。此后，渲染到该 EGLSurface 会导致一个缓冲区离开队列、进行渲染，然后排队等待消费方使用。
+
+虽然窗口通常会显示，但是在这种情况下，EGLSurface 窗口的输出可能不会出现在屏幕上。  
+EGL 不提供锁定/解锁调用。您需要发出绘制命令，然后调用 eglSwapBuffers()
+来提交当前帧。方法名称来自传统的前后缓冲区交换，但实际实现可能有所不同。
+
+一个 Surface 一次只能与一个 EGLSurface 关联（您只能将一个生产方连接到一个 BufferQueue），但是如果您销毁该
+EGLSurface，它将与该 BufferQueue 断开连接，并允许其他内容连接到该 BufferQueue。
+
+通过更改“当前”EGLSurface，指定线程可在多个 EGLSurface 之间进行切换。一个 EGLSurface 一次只能在一个线程上处于当前状态。
+
+EGL 不是 Surface 的另一方面（如 SurfaceHolder）。EGLSurface 是一个相关但独立的概念。您可以在没有 Surface
+作为支持的 EGLSurface 上绘制，也可以在没有 EGL 的情况下使用 Surface。EGLSurface 只是为 GLES 提供一个绘制的地方。
+
+## **2.ANativeWindow**
+
+  
+公开的 Surface 类以 Java 编程语言实现。C/C++ 中的同等项是 ANATIONWindow 类，由 Android NDK
+半公开。您可以使用 ANativeWindow_fromSurface() 调用从 Surface 获取 ANativeWindow。就像它的 Java
+语言同等项一样，您可以对 ANativeWindow 进行锁定、以软件形式进行渲染，以及解锁并发布。基本的“原生窗口”类型是 BufferQueue
+的生产方端。
+
+如需从原生代码创建 EGL 窗口 Surface，可将 EGLNativeWindowType 的实例传递到
+eglCreateWindowSurface()。EGLNativeWindowType 是 ANativeWindow 的同义词，因此可以互换使用。
+

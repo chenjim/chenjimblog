@@ -1,0 +1,86 @@
+原文  <a href=https://unbroken.blog.csdn.net/article/details/134142730>Android图形系统之HWComposer、ComposerHal、ComposerImpl、Composer、Hwc2--Composer实例总结(十四)</a><br>
+<div id="content_views" class="markdown_views prism-atom-one-dark">
+                    <svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+                        <path stroke-linecap="round" d="M5,0 0,2.5 5,5z" id="raphael-marker-block" style="-webkit-tap-highlight-color: rgba(0, 0, 0, 0);"/>
+                    </svg>
+                    <p><font color="red" size="3"> <strong>简介：</strong></font><font color="blue" size="3"> <strong>CSDN博客专家，专注Android/Linux系统，分享多mic语音方案、音视频、编解码等技术，与大家一起成长！</strong></font></p> 
+<p><font color="red" size="3"> <strong>优质专栏：</strong></font><a href="https://blog.csdn.net/u010164190/category_9599435.html"><strong>Audio工程师进阶系列</strong></a>【<strong>原创干货持续更新中……</strong>】🚀</p> 
+<p><font color="red" size="3"> <strong>人生格言：</strong> </font> <font color="blue" size="3"><strong>人生从来没有捷径，只有行动才是治疗恐惧和懒惰的唯一良药.</strong></font></p> 
+<center> 
+ <font color="red" size="5"> 更多原创,欢迎关注：Android系统攻城狮</font> 
+</center> 
+<p><img src="https://img-blog.csdnimg.cn/20190106163945739.jpg#pic_center" alt="欢迎关注Android系统攻城狮"/></p> 
+<h3><a id="1_12"/>1.前言</h3> 
+<blockquote> 
+ <p>本篇目的：Android图形系统中，HWC特别的复杂，特别是HWComposer、ComposerImpl、Composer、Hwc2::Composer之间的关系，有种剪不断理还乱的感觉，通过几个演化例子，看清楚它本来的面目。</p> 
+</blockquote> 
+<h3><a id="2HWComposerComposerImplComposerHwc2Composer_16"/>2.HWComposer、ComposerImpl、Composer、Hwc2::Composer定义与实现</h3> 
+<h4><a id="1HWComposer_17"/>1.HWComposer实现</h4> 
+<p>frameworks/native/services/surfaceflinger/DisplayHardware/HWComposer.h</p> 
+<h5><a id="1androidHWComposer_19"/><1>.android::HWComposer定义</h5> 
+<pre><code class="prism language-cpp"><span class="token keyword">namespace</span> Hwc2 <span class="token punctuation">{
+   <!-- --></span>
+<span class="token keyword">class</span> <span class="token class-name">Composer</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+
+<span class="token keyword">namespace</span> android <span class="token punctuation">{
+   <!-- --></span>
+<span class="token keyword">class</span> <span class="token class-name">HWComposer</span> <span class="token punctuation">{
+   <!-- --></span>
+	<span class="token keyword">virtual</span> <span class="token operator">~</span><span class="token function">HWComposer</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">virtual</span> <span class="token keyword">void</span> <span class="token function">setCallback</span><span class="token punctuation">(</span>HWC2<span class="token double-colon punctuation">::</span>ComposerCallback<span class="token operator">*</span><span class="token punctuation">)</span> <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">;</span>
+    <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span>
+<span class="token punctuation">}</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+</code></pre> 
+<h5><a id="2implHWComposerandroidHWComposer_34"/><2>.impl::HWComposer定义(继承自android::HWComposer)</h5> 
+<pre><code class="prism language-cpp"><span class="token keyword">namespace</span> impl <span class="token punctuation">{
+   <!-- --></span>
+
+<span class="token keyword">class</span> <span class="token class-name">HWComposer</span> <span class="token keyword">final</span> <span class="token operator">:</span> <span class="token keyword">public</span> android<span class="token double-colon punctuation">::</span>HWComposer <span class="token punctuation">{
+   <!-- --></span>
+<span class="token keyword">public</span><span class="token operator">:</span>
+    <span class="token keyword">explicit</span> <span class="token function">HWComposer</span><span class="token punctuation">(</span>std<span class="token double-colon punctuation">::</span>unique_ptr<span class="token operator"><</span>Hwc2<span class="token double-colon punctuation">::</span>Composer<span class="token operator">></span> composer<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">explicit</span> <span class="token function">HWComposer</span><span class="token punctuation">(</span><span class="token keyword">const</span> std<span class="token double-colon punctuation">::</span>string<span class="token operator">&</span> composerServiceName<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token operator">~</span><span class="token function">HWComposer</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token keyword">override</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+</code></pre> 
+<h5><a id="3implHWComposer_48"/><3>.impl::HWComposer实现</h5> 
+<p>frameworks/native/services/surfaceflinger/DisplayHardware/HWComposer.cpp</p> 
+<pre><code class="prism language-cpp"><span class="token keyword">namespace</span> impl <span class="token punctuation">{
+   <!-- --></span>
+	<span class="token class-name">HWComposer</span><span class="token double-colon punctuation">::</span><span class="token function">HWComposer</span><span class="token punctuation">(</span>std<span class="token double-colon punctuation">::</span>unique_ptr<span class="token operator"><</span>Hwc2<span class="token double-colon punctuation">::</span>Composer<span class="token operator">></span> composer<span class="token punctuation">)</span>
+      <span class="token operator">:</span> <span class="token function">mComposer</span><span class="token punctuation">(</span>std<span class="token double-colon punctuation">::</span><span class="token function">move</span><span class="token punctuation">(</span>composer<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+        <span class="token function">mMaxVirtualDisplayDimension</span><span class="token punctuation">(</span><span class="token generic-function"><span class="token function">static_cast</span><span class="token generic class-name"><span class="token operator"><</span>size_t<span class="token operator">></span></span></span><span class="token punctuation">(</span>sysprop<span class="token double-colon punctuation">::</span><span class="token function">max_virtual_display_dimension</span><span class="token punctuation">(</span><span class="token number">0</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+        <span class="token function">mUpdateDeviceProductInfoOnHotplugReconnect</span><span class="token punctuation">(</span>
+                sysprop<span class="token double-colon punctuation">::</span><span class="token function">update_device_product_info_on_hotplug_reconnect</span><span class="token punctuation">(</span><span class="token boolean">false</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{
+   <!-- --></span><span class="token punctuation">}</span>
+
+<span class="token class-name">HWComposer</span><span class="token double-colon punctuation">::</span><span class="token function">HWComposer</span><span class="token punctuation">(</span><span class="token keyword">const</span> std<span class="token double-colon punctuation">::</span>string<span class="token operator">&</span> composerServiceName<span class="token punctuation">)</span>
+      <span class="token operator">:</span> <span class="token function">HWComposer</span><span class="token punctuation">(</span>std<span class="token double-colon punctuation">::</span><span class="token generic-function"><span class="token function">make_unique</span><span class="token generic class-name"><span class="token operator"><</span>Hwc2<span class="token double-colon punctuation">::</span>impl<span class="token double-colon punctuation">::</span>Composer<span class="token operator">></span></span></span><span class="token punctuation">(</span>composerServiceName<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{
+   <!-- --></span><span class="token punctuation">}</span>
+
+<span class="token class-name">HWComposer</span><span class="token double-colon punctuation">::</span><span class="token operator">~</span><span class="token function">HWComposer</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{
+   <!-- --></span>
+    mDisplayData<span class="token punctuation">.</span><span class="token function">clear</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre> 
+<blockquote> 
+ <p>HWComposer构造函数通过它的委托构造函数，通过std::make_uniqueHwc2::impl::Composer(composerServiceName)实例画，那么Hwc2::impl::Composer的实现在哪呢？</p> 
+</blockquote> 
+<h4><a id="2ComposerImplHwc2Composer_67"/>2.ComposerImpl实现（Hwc2::Composer是它的别名）</h4> 
+<p>hardware/interfaces/graphics/composer/2.1/utils/hal/include/composer-hal/2.1/Composer.h</p> 
+<h5><a id="1ComposerComposerImpl_69"/><1>.Composer定义，它是ComposerImpl的别名</h5> 
+<pre><code class="prism language-cpp"><span class="token keyword">using</span> Composer <span class="token operator">=</span> detail<span class="token double-colon punctuation">::</span>ComposerImpl<span class="token operator"><</span>IComposer<span class="token punctuation">,</span> ComposerHal<span class="token operator">></span><span class="token punctuation">;</span>
+<span class="token keyword">template</span> <span class="token operator"><</span><span class="token keyword">typename</span> <span class="token class-name">Interface</span><span class="token punctuation">,</span> <span class="token keyword">typename</span> <span class="token class-name">Hal</span><span class="token operator">></span>
+<span class="token keyword">class</span> <span class="token class-name">ComposerImpl</span> <span class="token operator">:</span> <span class="token base-clause"><span class="token keyword">public</span> <span class="token class-name">Interface</span></span> <span class="token punctuation">{
+   <!-- --></span>
+   <span class="token keyword">public</span><span class="token operator">:</span>
+    <span class="token keyword">static</span> std<span class="token double-colon punctuation">::</span>unique_ptr<span class="token operator"><</span>ComposerImpl<span class="token operator">></span> <span class="token function">create</span><span class="token punctuation">(</span>std<span class="token double-colon punctuation">::</span>unique_ptr<span class="token operator"><</span>Hal<span class="token operator">></span> hal<span class="token punctuation">)</span> <span class="token punctuation">{
+   <!-- --></span>
+        </code></pre>
+                </div>
+                
