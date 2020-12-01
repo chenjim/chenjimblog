@@ -18,6 +18,7 @@
 > repo 说明文档参见 `repo help`，repo管理git项目，对于任意一个被管理的git项目，可以使用git相关的命令进行版本控制  
 > 本文链接 <http://blog.csdn.net/CSqingchen/article/details/78125769>  
 > Android 9.0.0_r60 的manifest [源码@google](https://android.googlesource.com/platform/manifest/+/refs/tags/android-9.0.0_r60/default.xml) 或 [源码@gitee](https://gitee.com/chenjimcom/repoABC/blob/9.0.0_r60/default.xml)  
+>安卓源码下载可以[使用工具](https://suying555.net/auth/register?code=8ogy)
 
 1. 初始化  
 `mkdir repoABC&&cd repoABC`  

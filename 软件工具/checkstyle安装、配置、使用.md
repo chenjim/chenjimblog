@@ -3,7 +3,7 @@
 >1. 良好的代码格式方便阅读，利于多人维护，避免格式化代码后差异太多
 >2. android studio默认配置格式化后，基本满足我们的格式要求。
 >3. 下面是如何安装，配置checkstyle。
->4. 部分内容参考自[官方文档](http://checkstyle.sourceforge.net/ )，目前主要是有两种范约束xml文件，分别是[sun_checks.xml](https://github.com/checkstyle/checkstyle/blob/master/src/main/resources/sun_checks.xml)和[google_checks.xml](hhttps://github.com/checkstyle/checkstyle/blob/master/src/main/resources/google_checks.xml)，本人使用的[简化配置文件](https://gitee.com/chenjim/checkstyle/blob/master/chenjim_checks.xml)
+>4. 部分内容参考自[官方文档](http://checkstyle.sourceforge.net/ )，目前主要是有两种范约束xml文件，分别是[sun_checks.xml](https://github.com/checkstyle/checkstyle/blob/master/src/main/resources/sun_checks.xml) 和[google_checks.xml](hhttps://github.com/checkstyle/checkstyle/blob/master/src/main/resources/google_checks.xml) ，本人使用的[简化配置文件](https://gitee.com/chenjim/checkstyle/blob/master/chenjim_checks.xml) 
 
 ## android studio（intellij）中安装使用
 1. 要求STUDIO_JDK为jdk8以上,否则安装后无法正常使用，可以在环境变量中配置`STUDIO_JDK=../jdk`为studio的jdk版本
@@ -18,7 +18,7 @@
 
 ## eclipse中安装使用
 1. 菜单help-->install new software，在`work with`后面输入栏，输入在线安装地址 http://eclipse-cs.sourceforge.net/update，安装
-2. 菜单Windows-->Preference，点击`checkstyle`，点击`New`，在`Check Configuration Properties`界面，`type`选择`External Configuration File`， 点击`Browse`，导入[chenjim_checks.xml](https://gitee.com/chenjim/checkstyle/blob/master/chenjim_checks.xml)，配置完成点击`OK`.
+2. 菜单Windows-->Preference，点击`checkstyle`，点击`New`，在`Check Configuration Properties`界面，`type`选择`External Configuration File`， 点击`Browse`，导入[chenjim_checks.xml](https://gitee.com/chenjim/checkstyle/blob/master/chenjim_checks.xml) ，配置完成点击`OK`.
 3. 选中刚新加的配置，点击右侧`Set as Default`
 4. 打开一份java代码，右键，就有checkstyle选项
 
@@ -27,7 +27,7 @@
 ## 命令行中使用
 >使用较繁琐，版本不一样还可能会出现其他异常，不推荐使用
 
-1. 从[官方地址](https://sourceforge.net/projects/checkstyle/files/checkstyle/)或者 [Maven central](http://search.maven.org/#search|gav|1|g%3A%22com.puppycrawl.tools%22%20AND%20a%3A%22checkstyle%22)下载`checkstyle-**-all.jar`到自己的电脑
+1. 从[官方地址](https://sourceforge.net/projects/checkstyle/files/checkstyle/) 或者 [Maven central](http://search.maven.org/#search|gav|1|g%3A%22com.puppycrawl.tools%22%20AND%20a%3A%22checkstyle%22) 下载`checkstyle-**-all.jar`到自己的电脑
 2. 使用命令形式如下
 `java -jar checkstyle-**-all.jar的绝对路径 -c chenjim_checks.xml的绝对路径 要检测文件的路径`
 例如

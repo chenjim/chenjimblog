@@ -38,16 +38,15 @@
 
 4. 启动 `.\artifactory-pro-6.6.0\bin\artifactory.bat start`
    出现 `Artifactory successfully started`表示启动成功
-5. 浏览器打开 [http://127.0.0.1:8081](http://127.0.0.1:8081)进行相应的配置，包含输入步骤3生成的license  
+5. 浏览器打开 <http://127.0.0.1:8081>进行相应的配置，包含输入步骤3生成的license  
    如需修改端口更改 `artifactory-pro-6.6.0\tomcat\conf\server.xml`中8081为相应的值即可
-6. 在http://127.0.0.1:8081/artifactory/webapp/#/admin/repositories/remote添加一些maven镜像代理  
+6. 在`http://127.0.0.1:8081/artifactory/webapp/#/admin/repositories/remote`添加一些maven镜像代理  
 比如：  
 aliyun_public   https://maven.aliyun.com/repository/public  
 aliyun_google   https://maven.aliyun.com/repository/google  
-aliyun_jcenter   https://maven.aliyun.com/repository/jcenter  
-在http://127.0.0.1:8081/artifactory/webapp/#/admin/repositories/virtual添加虚拟组  
-比如 repo_java 组包含 aliyun_public  aliyun_google aliyun_jcenter  
+在`http://127.0.0.1:8081/artifactory/webapp/#/admin/repositories/virtual` 添加虚拟组  
+比如 repo_java 组包含 aliyun_public  aliyun_google
 此时项目中所有maven{*}  
 都可以替换为`http://127.0.0.1:8081/artifactory/repo_java`
 
-7. 更多内容可以参考 [https://www.jianshu.com/p/913a364d3245](https://www.jianshu.com/p/913a364d3245)
+7. 更多内容可以参考 <https://www.jianshu.com/p/913a364d3245> 

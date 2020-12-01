@@ -1,9 +1,10 @@
 @[toc]
 ## Android 性能优化--APP启动、UI优化
 
+>本文地址 <https://blog.csdn.net/CSqingchen/article/details/106186210>
 
 ### 安卓系统启动流程
-1. 打开电源   引导芯片代码加载引导程序Boot Loader到RAM中去执行
+1. 打开电源，引导芯片代码加载引导程序Boot Loader到RAM中去执行
 2. BootLoader把操作系统拉起来
 3. Linux 内核启动开始系统设置，找到一个init.rc文件启动初始化进程
 4. init进程初始化和启动属性服务，之后开启Zygote进程
@@ -13,7 +14,7 @@
 
 ### Activity启动流程
 大致流程如下  
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20200616143340794.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L0NTcWluZ2NoZW4=,size_16,color_FFFFFF,t_70)
+![在这里插入图片描述](https://img-blog.csdnimg.cn/20200616143340794.png)  
 详细可以参考 [Activity启动流程源码分析](https://blog.csdn.net/qq_23547831/article/details/51224992)
 
 ### 优化启动的Activity
@@ -35,7 +36,7 @@
 ##### Button(View)的显示过程
 1. LayoutInflater加载布局文件到内存，转化为包含大小位置等信息的Button对象
 2. CPU经过计算，处理成多为矢量图
-3. GPU格栅化[(参考'图像渲染机制')](https://www.jianshu.com/p/1998182670fb)进行像素填充显示
+3. GPU格栅化[(参考'图像渲染机制')](https://www.jianshu.com/p/1998182670fb) 进行像素填充显示
 
 ##### 布局优化方案
 - 减少过度绘制，我应该减少红色的显示，比如：  
@@ -54,9 +55,13 @@ Android7.0之后invalidate()不再执行测量和布局动作。
 2. 查看UI层级 `sdk\tools\bin\uiautomatorviewer.bat`
 <img src="https://pic.chenjim.com/20200617235612.png-blog" width = "800" />
 
-3. 查看UI层级嵌套及性能 `sdk\tools\monitor.bat`
-点击下图三色圆叠加地方后，可以分别显示页面measure、layout、draw的时间，红色性能最差，绿色最快。
+3. 查看UI层级嵌套及性能 `sdk\tools\monitor.bat`  
+点击下图三色圆叠加地方后，可以分别显示页面measure、layout、draw的时间  
+红色性能最差，绿色最快。
 <img src="https://pic.chenjim.com/20200618001609.png-blog" width = "800"/>
+
+4. 这里的工具是基于eclipse的，最新的SDK默认已经没有`sdk\tools\`目录，但可参考下图更新SDK工具包
+<img src="https://pic.chenjim.com/20201203093648543.png-blog" width = "800"/>
 
 
 #### Activity的代码优化
@@ -74,6 +79,7 @@ Android7.0之后invalidate()不再执行测量和布局动作。
 #### logcat查看启动时间
 ` adb logcat -v time |grep com.xxx.xxx`
 查看logcat中包名"com.xxx.xxx"的相关日志
+
 #### Profiler查看启动时间
 - 在要调试的代码前后添加如下代码，启动应用，会在`data/data/com.xxx.xx/files/app.trace`中生成调试的trace信息
 ```
@@ -86,3 +92,6 @@ Debug.stopMethodTracing()
 - 将以上文件导出，并用AS打开，可以进一步分析耗时信息  
 `adb pull data/data/com.xxx.xxxx/files/app.trace`  
 <img src="https://pic.chenjim.com/20200618002603.png-blog" width = "800"/>
+
+**原创文章，转载请注明出处、原文链接！**  
+**邮件 <me@h89.cn> ，主页 [https://chenjim.com](https://h89.cn)**
