@@ -1119,4 +1119,6 @@ bool MMKV::fullWriteback() {
 - [https://time.geekbang.org/column/article/76677](https://time.geekbang.org/column/article/76677)
 - [https://www.cnblogs.com/kex1n/p/7100107.html](https://www.cnblogs.com/kex1n/p/7100107.html)
 
-> 转载自[SharryChoo](https://www.jianshu.com/u/c3c6db35f3d2)的[博客](https://www.jianshu.com/p/13b889028326)
+
+
+转载自<https://www.jianshu.com/p/13b889028326>
