@@ -14,7 +14,7 @@
     `git config --global user.email me@h89.cn`  
 
 2. alias简写配置  
-```
+ ```
     git config --global alias.cp cherry-pick &&
     git config --global alias.co checkout &&
     git config --global alias.ci commit &&
@@ -41,20 +41,23 @@
     `git config --global --unset http.proxy`
     `git config --global --unset http.https://github.com.proxy`  
 
-  6. 生成ssh的key命令  
+6. 生成ssh的key命令  
       `ssh-keygen`  直接回车  
 
-  7. 查看当前用户的配置  
+7. 查看当前用户的配置  
       `vi ~/.gitconfig`   或者`git config -l`  
 
-  8. 长期存储密码  
-     `git config --global credential.helper store`  
-     或者将账号密码存储在http url  
-     `git remote rm origin`  
-     `git remote add origin  http://yourname:password@git.oschina.net/name/project.git`  
+8. 长期存储密码  
+    `git config --global credential.helper store`  
+   或者将账号密码存储在http url  
+    `git remote rm origin`  
+    `git remote add origin  http://yourname:password@git.oschina.net/name/project.git`  
      
- 9. 设置文本编辑器  
+9. 设置文本编辑器  
     `git config --global core.editor vi`  
+	
+10. 配置是否忽略文件权限  
+    `git config --global core.fileMode false `  false 忽略，true 不忽略  	
 
 ---
 
