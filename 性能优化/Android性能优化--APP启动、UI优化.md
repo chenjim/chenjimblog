@@ -1,3 +1,4 @@
+
 @[toc]
 ## Android 性能优化--APP启动、UI优化
 
@@ -40,28 +41,30 @@
 
 ##### 布局优化方案
 - 减少过度绘制，我应该减少红色的显示，比如：  
-减少背景重复，如“Activity的Theme优化”；  
-使用裁减减少控件之间的重合部分；  
-Android7.0之后invalidate()不再执行测量和布局动作。   
-![在这里插入图片描述](https://img-blog.csdnimg.cn/2020061800312382.png)
+  减少背景重复，如“Activity的Theme优化”；  
+  使用裁减减少控件之间的重合部分；  
+  Android7.0之后invalidate()不再执行测量和布局动作。   
+  ![在这里插入图片描述](https://img-blog.csdnimg.cn/2020061800312382.png)
 
-- 减少布局层级嵌套，采用`ConstraintLayout`、`<merge>`   
-- 采用`<include>`复用布局，可以减少GPU重复工作  
-- 采用`ViewStub`按需加载  
+- 减少布局层级嵌套，采用`ConstraintLayout`、`<merge>`
+- 采用`<include>`复用布局，可以减少GPU重复工作
+- 采用`ViewStub`按需加载
 
 ##### 常用优化工具
 1. GPU过度绘制查看
-手机开发者模式-->调试GPU过度绘制-->显示过度绘制区域。  
+   手机开发者模式-->调试GPU过度绘制-->显示过度绘制区域。
 2. 查看UI层级 `sdk\tools\bin\uiautomatorviewer.bat`
-<img src="https://pic.chenjim.com/20200617235612.png-blog" width = "800" />
+   <img src="https://pic.chenjim.com/20200617235612.png-blog" width = "800" />
 
 3. 查看UI层级嵌套及性能 `sdk\tools\monitor.bat`  
-点击下图三色圆叠加地方后，可以分别显示页面measure、layout、draw的时间  
-红色性能最差，绿色最快。
-<img src="https://pic.chenjim.com/20200618001609.png-blog" width = "800"/>
+   点击下图三色圆叠加地方后，可以分别显示页面measure、layout、draw的时间  
+   红色性能最差，绿色最快。
+   <img src="https://pic.chenjim.com/20200618001609.png-blog" width = "800"/>
 
-4. 这里的工具是基于eclipse的，最新的SDK默认已经没有`sdk\tools\`目录，但可参考下图更新SDK工具包
-<img src="https://pic.chenjim.com/20201203093648543.png-blog" width = "800"/>
+4. 这里的工具是基于eclipse的，最新的SDK默认已经没有`sdk\tools\`目录，但可参考下图更新SDK工具包  
+   <img src="https://pic.chenjim.com/20201203093648543.png-blog" width = "800"/>
+   Android Studio 本身也带了"Layout inspector"可查看，如下图：  
+   <img src="https://img-blog.csdnimg.cn/20210311172237478.png" width = "800"/>
 
 
 #### Activity的代码优化
@@ -90,8 +93,8 @@ Debug.stopMethodTracing()
 ```
 
 - 将以上文件导出，并用AS打开，可以进一步分析耗时信息  
-`adb pull data/data/com.xxx.xxxx/files/app.trace`  
-<img src="https://pic.chenjim.com/20200618002603.png-blog" width = "800"/>
+  `adb pull data/data/com.xxx.xxxx/files/app.trace`  
+  <img src="https://pic.chenjim.com/20200618002603.png-blog" width = "800"/>
 
 **原创文章，转载请注明出处、原文链接！**  
 **邮件 <me@h89.cn> ，主页 [https://chenjim.com](https://h89.cn)**

@@ -2,9 +2,10 @@
 
 @[toc]
 
->**keytool**、**jarsigner** 均是jdk提供的工具，[JDK下载](http://www.oracle.com/technetwork/java/javase/downloads/index.html)  
->涉及的文件可以参考示例 [AndroidSignKeyConvert](https://gitee.com/chenjim/AndroidSignKeyConvert)
->Android 签名机制 v1、v2、v3 参阅 <https://www.jianshu.com/p/9ca1d6f3f083>
+>**keytool**、**jarsigner** 均是jdk提供的工具，[JDK下载链接](http://www.oracle.com/technetwork/java/javase/downloads/index.html)  
+>涉及的文件可以参考示例 [AndroidSignKeyConvert](https://gitee.com/chenjim/AndroidSignKeyConvert)  
+>Android 签名机制 v1、v2、v3 参阅 <https://source.android.com/security/apksigning/v2>
+
 ### 1. 生成APK签名文件
 #### 1.1 使用keytool命令生成.jks
 `keytool -genkeypair -alias business -keypass 123456 -keystore ./genkey.jks -storepass 123123 -validity 120000 -keysize 1024`   
@@ -18,7 +19,7 @@
 需要用到之前生成签名文件的密钥库的密码`123123`
 
 ### 3. 对apk签名的几种方式
-#### 3.1 用指定的keystore 签名apk
+#### 3.1 用指定的keystore 对 apk V1 签名
 ```
 jarsigner -keystore ./genkey.jks -signedjar ./signed.apk ./unsigned.apk business
 输入密钥库的密码短语: //123123
@@ -28,18 +29,18 @@ jar 已签名。
 将`unsigned.apk`用`./genkey.jks`的`business`密匙签名为`signed.apk`
 需要用到之前生成签名文件的两个密码
 
-#### 3.2 使用platform.x509.pem和platform.pk8对apk签名
+#### 3.2 使用platform.x509.pem和platform.pk8对 apk V1 签名
 >此种情况多见Android系统开发中，对系统应用签名  
 >有如下新旧两种命令
 
 1. `java -jar apksigner.jar sign --key genkey.pk8 --cert genkey.x509.pem --in unsigned.apk --out signed.apk`
-- 这个是新的签名方式，参考[apksigner](https://developer.android.com/studio/command-line/apksigner)
-- apksigner.jar 来自..\sdk\build-tools\29.0.0\lib\
-- `java -jar apksigner.jar sign --help`命令的帮助说明
+   - 这个是新的签名方式，参考[apksigner](https://developer.android.com/studio/command-line/apksigner)
+   - apksigner.jar 来自..\sdk\build-tools\29.0.0\lib\
+   - `java -jar apksigner.jar sign --help`命令的帮助说明
 
 2. `java -jar signapk.jar  platform.x509.pem platform.pk8 unsigned.apk signed.apk`
--  **signapk.jar** 可以编译Android源码(`mmm build/tools/signapk/`) 得到，源码中位置`prebuilts/sdk/tools/lib/signapk.jar`也可能有
-- **platform.x509.pem和platform.pk8**在源码目录`build/target/product/security/`中
+   - **signapk.jar** 可以编译Android源码(`mmm build/tools/signapk/`) 得到，源码中位置`prebuilts/sdk/tools/lib/signapk.jar`也可能有
+   - **platform.x509.pem和platform.pk8**在源码目录`build/target/product/security/`中
 
 #### 3.3 使用集成IDE对APK签名
 多数IDE(IntellJ/AS)是在菜单**build**-->**Generate Signed APK**中  
@@ -65,11 +66,40 @@ Android Studio 可以自动签名，需要在build.gradle中添加如下配置
 
 本文地址 <http://blog.csdn.net/CSqingchen/article/details/78228933>
 
-### 4. 用keytool查看应用(APK)的签名
-- 将签名后的`signed.apk`解压缩到目录signed，得到签名文件`.\signed\META-INF\BUSINESS.DSA`，有些是`META-INF\CERT.RSA`
-- 使用keytool可以查看  `keytool -printcert -file ./BUSINESS.DSA`
 
-本文地址<http://blog.csdn.net/CSqingchen/article/details/78228933>
+---
+
+### 4. 用 keytool 查看应用(APK)的签名
+
+#### 4.1 查看apk签名V1 V2 V3 支持情况  
+`java -jar Android-sdk/build-tools/29.0.0/lib/apksigner.jar verify -v signed.apk`  
+   结果类似如下  
+   ```
+   Verified using v1 scheme (JAR signing): false
+   Verified using v2 scheme (APK Signature Scheme v2): true
+   Verified using v3 scheme (APK Signature Scheme v3): false
+   Number of signers: 1
+   ```
+   《Android v1、v2、v3签名详解》可参考 <https://source.android.com/security/apksigning/v2>
+#### 4.2 查看 apk V1签名
+   1. 将签名后的`signed.apk`解压可得到V1签名文件`META-INF\BUSINESS.RSA`，以文件名后缀为准  
+   2. 使用keytool可以查看  
+   `keytool -printcert -file ./BUSINESS.DSA`
+      
+#### 4.3 Android 项目中查看签名信息
+   执行命令`.\gradlew.bat :app:signingReport`，得到如下签名结果  
+   ```
+   Variant: release
+   Config: config
+   Store: D:\code\1.gitee\AndroidSignKeyConvert\genkey.jks
+   Alias: business
+   MD5: 9F:E0:78:DD:BC:2A:C2:FB:90:8D:67:D1:F7:FE:29:BF
+   SHA1: CC:A0:52:3A:4A:6F:0A:77:3A:68:2C:A0:18:52:1D:A7:36:EB:B5:16
+   SHA-256: A3:F7:B3:7E:3F:C0:E6:A8:FF:74:2C:4E:FA:FC:AC:66:E4:38:B3:02:2C:94:7E:07:AC:63:B2:0F:30:7F:09:51
+   Valid until: 2348年10月13日 星期三
+   ```
+
+---
 
 ### 5. 签名文件转换之 .jks转 .keystone
 
@@ -98,6 +128,10 @@ keytool -v -importkeystore -srckeystore ./genkey.p12 -srcstoretype PKCS12 -destk
 keytool -list -v -keystore genkey.jks
 keytool -list -v -keystore genkey.keystore
 ```
+
+
+---
+
 ### 6. 签名文件转换之 .keystore转.x509.pem和.pk8
 > 需要用到openssl，windows可以在Git安装目录找到，如'C:\Program Files\Git\mingw64\bin'，linux中没有的自信安装
 
@@ -121,13 +155,15 @@ Enter Import Password: //参考如上5.1 p12的密码123456
 
 ```
 3. 生成pk8格式的私钥  
-`openssl pkcs8 -topk8 -outform DER -in genkey_private.rsa.pem -inform PEM -out genkey.pk8 -nocrypt`
+   `openssl pkcs8 -topk8 -outform DER -in genkey_private.rsa.pem -inform PEM -out genkey.pk8 -nocrypt`
 4. 至此步骤3.2中的.x509.pem和.pk8 已经生成，可以用如下命令签名  
-`java -jar apksigner.jar sign --key genkey.pk8 --cert genkey.x509.pem --in unsigned.apk --out signed.apk`
+   `java -jar apksigner.jar sign --key genkey.pk8 --cert genkey.x509.pem --in unsigned.apk --out signed.apk`
+
+---
 
 ### 7. 应用中获取签名信息
->参考自<https://blog.csdn.net/anydrew/article/details/51227517>
->普通APP只能获取自己的签名信息，无法获取其它应用的
+>参考自<https://blog.csdn.net/anydrew/article/details/51227517>  
+>普通APP只能获取自己的签名信息，无法获取其它应用的签名  
 核心代码整理如下，参见[测试代码 MainActivity.java](https://gitee.com/chenjim/AndroidSignKeyConvert/blob/master/app/src/main/java/com/chenjim/andsignkeyconvert/MainActivity.java)
 ```JAVA
 public String getAppSign() {
