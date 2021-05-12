@@ -22,7 +22,7 @@
 参考 Android 9.0.0_r60 的 manifest:  
 <https://android.googlesource.com/platform/manifest/+/refs/tags/android-9.0.0_r60/default.xml>  
 或者  
-<https://gitee.com/chenjimcom/repoABC/blob/9.0.0_r60/default.xml>  
+<https://gitee.com/chenjim/repoABC/blob/9.0.0_r60/default.xml>  
 
 安卓源码访问可以[ 使用工具 ](https://suying555.net/auth/register?code=8ogy)
 
